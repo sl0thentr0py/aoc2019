@@ -4,18 +4,22 @@ class Computer
 
   attr_accessor :pc, :tape, :instruction
 
-  STEPS = { halt: 1, arithmetic: 4, io: 2 }
+  STEPS = { halt: 1, arithmetic: 4, io: 2, jump: 3, compare: 4 }
 
   def initialize(input)
     @tape = input.dup
     @pc = 0
     @instruction = nil
+    @jumped = false
   end
 
   def execute
     return unless read_instruction
     return unless execute_instruction
-    @pc += steps
+
+    @pc += steps unless @jumped
+    @jumped = false # fugly
+
     execute
   end
 
@@ -45,6 +49,10 @@ class Computer
       :arithmetic
     when 3, 4
       :io
+    when 5, 6
+      :jump
+    when 7, 8
+      :compare
     else
       :unknown
     end
@@ -96,6 +104,20 @@ class Computer
     end
   end
 
+  def execute_jump
+    cond = opcode_last == 5 ? operand1 != 0 : operand1 == 0
+
+    if cond
+      @pc = operand2
+      @jumped = true
+    end
+  end
+
+  def execute_compare
+    cond = opcode_last == 7 ? operand1 < operand2 : operand1 == operand2
+    @tape[@instruction[3]] = cond ? 1 : 0
+  end
+
   def read_instruction
     @instruction = @tape.slice(@pc...@pc + steps)
   end
@@ -109,6 +131,12 @@ class Computer
       true
     when :io
       execute_io
+      true
+    when :jump
+      execute_jump
+      true
+    when :compare
+      execute_compare
       true
     else
       raise 'Unknwown instruction'
