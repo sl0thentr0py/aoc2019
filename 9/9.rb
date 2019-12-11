@@ -25,17 +25,11 @@ class Computer
   end
 
   def execute
-    return unless read_instruction
-    execute_instruction
-    return if halted?
-
-    if @jumped
-      @jumped = false
-    else
-      @pc += steps
+    while !halted? do
+      read_instruction
+      execute_instruction
+      update_pc
     end
-
-    execute
   end
 
   def halted?
@@ -43,6 +37,14 @@ class Computer
   end
 
   private
+
+  def update_pc
+    if @jumped
+      @jumped = false
+    else
+      @pc += steps
+    end
+  end
 
   def steps
     STEPS[opcode_type]
